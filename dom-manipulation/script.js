@@ -1,6 +1,6 @@
 let quotes = [];
 
-// Load quotes from localStorage or set default if empty
+// Load quotes from localStorage or use defaults
 function loadQuotes() {
   const storedQuotes = localStorage.getItem("quotes");
   if (storedQuotes) {
@@ -12,47 +12,38 @@ function loadQuotes() {
       { text: "The purpose of our lives is to be happy.", category: "Life" },
       { text: "Your limitation—it's only your imagination.", category: "Motivation" },
     ];
-    saveQuotes();
+    saveQuotes(); // Save defaults
   }
 }
 
-// Save quotes array to localStorage
+// Save quotes to localStorage
 function saveQuotes() {
   localStorage.setItem("quotes", JSON.stringify(quotes));
 }
 
-// Save the currently viewed quote to sessionStorage
+// Save currently viewed quote to sessionStorage
 function saveLastViewedQuote(quote) {
   sessionStorage.setItem("lastViewedQuote", JSON.stringify(quote));
 }
 
-// Restore last viewed quote from sessionStorage
+// Load and display the last viewed quote
 function loadLastViewedQuote() {
   const last = sessionStorage.getItem("lastViewedQuote");
   if (last) {
     const quote = JSON.parse(last);
-    quoteDisplay.textContent = `"${quote.text}" - [${quote.category}]`;
+    document.getElementById("quoteDisplay").textContent = `"${quote.text}" - [${quote.category}]`;
   }
 }
 
-// Populate category dropdown from quote categories
+// Populate category dropdown with unique categories
 function populateCategories() {
+  const categoryFilter = document.getElementById("categoryFilter");
   const categories = ["all", ...new Set(quotes.map(q => q.category))];
   categoryFilter.innerHTML = "";
 
   categories.forEach(cat => {
     const option = document.createElement("option");
     option.value = cat;
-    option.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
-    categoryFilter.appendChild(option);
-  });
-
-  // Restore last selected category
-  const savedCategory = localStorage.getItem("selectedCategory");
-  if (savedCategory && categories.includes(savedCategory)) {
-    categoryFilter.value = savedCategory;
-    filterQuotes(); // Update quote display immediately
+    option.textCon})
   }
-}
 
-// Filter quotes based on selected cat
