@@ -83,7 +83,7 @@ function addQuote() {
 }
 
 // Fetch quotes from mock API and sync with local
-async function fetchServerQuotes() {
+async function fetchQuotesFromServer() {
   try {
     const response = await fetch("https://jsonplaceholder.typicode.com/posts");
     const data = await response.json();
@@ -122,7 +122,7 @@ async function fetchServerQuotes() {
 loadLocalQuotes();
 updateCategoryDropdown();
 showRandomQuote();
-fetchServerQuotes();
+fetchQuotesFromServer();
 
 // Event listeners
 newQuoteBtn.addEventListener("click", showRandomQuote);
