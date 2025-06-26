@@ -57,30 +57,50 @@ function showRandomQuote() {
   quoteDisplay.textContent = `"${random.text}" — [${random.category}]`;
 }
 
-// Add a new quote from user input
-function addQuote() {
-  const text = document.getElementById("newQuoteText").value.trim();
-  const category = document.getElementById("newQuoteCategory").value.trim();
-
-  if (!text || !category) {
-    alert("Please fill in both quote text and category.");
-    return;
+async function addQuote() {
+    const text = document.getElementById("newQuoteText").value.trim();
+    const category = document.getElementById("newQuoteCategory").value.trim();
+  
+    if (!text || !category) {
+      alert("Please fill in both quote text and category.");
+      return;
+    }
+  
+    const newQuote = { text, category };
+  
+    const exists = quotes.some(q => q.text === text && q.category === category);
+    if (exists) {
+      alert("This quote already exists.");
+      return;
+    }
+  
+    // Add locally
+    quotes.push(newQuote);
+    saveLocalQuotes();
+    updateCategoryDropdown();
+    document.getElementById("newQuoteText").value = "";
+    document.getElementById("newQuoteCategory").value = "";
+  
+    // 🔄 POST to mock server
+    try {
+      const response = await fetch("https://jsonplaceholder.typicode.com/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(newQuote)
+      });
+  
+      const responseData = await response.json();
+      console.log("Server response:", responseData);
+      alert("Quote added and sent to server!");
+  
+    } catch (error) {
+      console.error("Error posting quote:", error);
+      alert("Quote added locally, but failed to sync with server.");
+    }
   }
-
-  const exists = quotes.some(q => q.text === text && q.category === category);
-  if (exists) {
-    alert("This quote already exists.");
-    return;
-  }
-
-  quotes.push({ text, category });
-  saveLocalQuotes();
-  updateCategoryDropdown();
-
-  document.getElementById("newQuoteText").value = "";
-  document.getElementById("newQuoteCategory").value = "";
-  alert("Quote added!");
-}
+  
 
 // Fetch quotes from mock API and sync with local
 async function fetchQuotesFromServer() {
