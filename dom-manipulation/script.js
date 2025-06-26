@@ -6,13 +6,13 @@ const quoteDisplay = document.getElementById("quoteDisplay");
 const newQuoteBtn = document.getElementById("newQuote");
 const categoryFilter = document.getElementById("categoryFilter");
 
-// Load saved quotes from localStorage
+// Load local data
 function loadLocalQuotes() {
   const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
   quotes = saved ? JSON.parse(saved) : [];
 }
 
-// Save quotes to localStorage
+// Save quotes to local storage
 function saveLocalQuotes() {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(quotes));
 }
@@ -21,15 +21,17 @@ function saveLocalQuotes() {
 function notifyUser(message) {
   const note = document.createElement("div");
   note.textContent = message;
-  note.style.background = "#e0f7fa";
-  note.style.color = "#006064";
+  note.style.background = "#fff3cd";
+  note.style.color = "#856404";
+  note.style.border = "1px solid #ffeeba";
   note.style.padding = "10px";
   note.style.marginTop = "15px";
+  note.style.borderRadius = "5px";
   document.body.insertBefore(note, document.body.firstChild);
   setTimeout(() => note.remove(), 5000);
 }
 
-// Update the category dropdown
+// Update category dropdown
 function updateCategoryDropdown() {
   const categories = ["all", ...new Set(quotes.map(q => q.category))];
   categoryFilter.innerHTML = "";
@@ -41,7 +43,7 @@ function updateCategoryDropdown() {
   });
 }
 
-// Show a random quote from the selected category
+// Show a random quote
 function showRandomQuote() {
   const selectedCategory = categoryFilter.value;
   const filtered = selectedCategory === "all"
@@ -57,96 +59,100 @@ function showRandomQuote() {
   quoteDisplay.textContent = `"${random.text}" — [${random.category}]`;
 }
 
+// Add a new quote (and POST to mock server)
 async function addQuote() {
-    const text = document.getElementById("newQuoteText").value.trim();
-    const category = document.getElementById("newQuoteCategory").value.trim();
-  
-    if (!text || !category) {
-      alert("Please fill in both quote text and category.");
-      return;
-    }
-  
-    const newQuote = { text, category };
-  
-    const exists = quotes.some(q => q.text === text && q.category === category);
-    if (exists) {
-      alert("This quote already exists.");
-      return;
-    }
-  
-    // Add locally
-    quotes.push(newQuote);
-    saveLocalQuotes();
-    updateCategoryDropdown();
-    document.getElementById("newQuoteText").value = "";
-    document.getElementById("newQuoteCategory").value = "";
-  
-    // 🔄 POST to mock server
-    try {
-      const response = await fetch("https://jsonplaceholder.typicode.com/posts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(newQuote)
-      });
-  
-      const responseData = await response.json();
-      console.log("Server response:", responseData);
-      alert("Quote added and sent to server!");
-  
-    } catch (error) {
-      console.error("Error posting quote:", error);
-      alert("Quote added locally, but failed to sync with server.");
-    }
-  }
-  
+  const text = document.getElementById("newQuoteText").value.trim();
+  const category = document.getElementById("newQuoteCategory").value.trim();
 
-// Fetch quotes from mock API and sync with local
-async function fetchQuotesFromServer() {
+  if (!text || !category) {
+    alert("Please fill in both fields.");
+    return;
+  }
+
+  const newQuote = { text, category };
+
+  const exists = quotes.some(q => q.text === text && q.category === category);
+  if (exists) {
+    alert("This quote already exists.");
+    return;
+  }
+
+  quotes.push(newQuote);
+  saveLocalQuotes();
+  updateCategoryDropdown();
+  document.getElementById("newQuoteText").value = "";
+  document.getElementById("newQuoteCategory").value = "";
+
+  try {
+    const response = await fetch("https://jsonplaceholder.typicode.com/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newQuote)
+    });
+
+    const responseData = await response.json();
+    console.log("POST response (mock):", responseData);
+    alert("Quote added and sent to server!");
+  } catch (error) {
+    console.error("Error syncing to server:", error);
+    alert("Quote saved locally, but not sent to server.");
+  }
+}
+
+// ✅ Sync with server, update local storage, handle conflicts
+async function syncQuotes() {
   try {
     const response = await fetch("https://jsonplaceholder.typicode.com/posts");
     const data = await response.json();
 
-    // Take first 10 posts as quotes
     const serverQuotes = data.slice(0, 10).map(post => ({
       text: post.body,
       category: "General"
     }));
 
     let updated = false;
+    let conflictCount = 0;
 
     serverQuotes.forEach(serverQuote => {
-      const exists = quotes.some(localQuote =>
-        localQuote.text === serverQuote.text && localQuote.category === serverQuote.category
+      const localIndex = quotes.findIndex(
+        q => q.text.trim().toLowerCase() === serverQuote.text.trim().toLowerCase()
       );
-      if (!exists) {
+
+      if (localIndex === -1) {
+        // New server quote, add it
         quotes.push(serverQuote);
         updated = true;
+      } else if (quotes[localIndex].category !== serverQuote.category) {
+        // Conflict — resolve by using server version
+        quotes[localIndex] = serverQuote;
+        updated = true;
+        conflictCount++;
       }
     });
 
     if (updated) {
       saveLocalQuotes();
       updateCategoryDropdown();
-      notifyUser("New quotes synced from server.");
+      notifyUser(
+        `Quotes synced from server.${conflictCount > 0 ? ` ${conflictCount} conflict(s) resolved.` : ""}`
+      );
     }
 
   } catch (err) {
-    console.error("Failed to sync quotes from server:", err);
-    notifyUser("Could not sync with server. Try again later.");
+    console.error("Error syncing with server:", err);
+    notifyUser("Could not sync with server.");
   }
 }
 
-// Initial setup
+// Initial run
 loadLocalQuotes();
 updateCategoryDropdown();
 showRandomQuote();
-fetchQuotesFromServer();
+syncQuotes(); // 🔄 Immediate sync
+
+// Periodic syncing every 30 seconds
+setInterval(syncQuotes, 30000);
 
 // Event listeners
 newQuoteBtn.addEventListener("click", showRandomQuote);
 categoryFilter.addEventListener("change", showRandomQuote);
-
-// Periodic sync every 30 seconds
-setInterval(fetchServerQuotes, 30000);
