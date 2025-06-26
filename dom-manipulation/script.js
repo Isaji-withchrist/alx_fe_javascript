@@ -150,3 +150,6 @@ categoryFilter.addEventListener("change", showRandomQuote);
 
 // Periodic sync every 30 seconds
 setInterval(syncQuotes, 30000);
+
+notifyUser("Quotes synced with server.");
+
