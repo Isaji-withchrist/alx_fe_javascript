@@ -149,4 +149,4 @@ newQuoteBtn.addEventListener("click", showRandomQuote);
 categoryFilter.addEventListener("change", showRandomQuote);
 
 // Periodic sync every 30 seconds
-setInterval(fetchServerQuotes, 30000);
+setInterval(syncQuotes, 30000);
