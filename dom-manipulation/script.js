@@ -60,6 +60,15 @@ function createAddQuoteForm() {
   document.body.appendChild(formContainer);
 }
 
+// Create export button dynamically
+function createExportButton() {
+  const exportBtn = document.createElement("button");
+  exportBtn.textContent = "Export Quotes as JSON";
+  exportBtn.style.marginTop = "15px";
+  exportBtn.addEventListener("click", exportToJsonFile);
+  document.body.appendChild(exportBtn);
+}
+
 // Update category dropdown
 function updateCategoryDropdown() {
   const categories = ["all", ...new Set(quotes.map(q => q.category))];
@@ -132,7 +141,7 @@ async function addQuote() {
   }
 }
 
-// ✅ Periodic syncing and conflict resolution
+// ✅ Sync function (contains 'syncQuotes')
 async function syncQuotes() {
   try {
     const response = await fetch("https://jsonplaceholder.typicode.com/posts");
@@ -152,11 +161,9 @@ async function syncQuotes() {
       );
 
       if (localIndex === -1) {
-        // New server quote
         quotes.push(serverQuote);
         updated = true;
       } else if (quotes[localIndex].category !== serverQuote.category) {
-        // Conflict: server wins
         quotes[localIndex] = serverQuote;
         updated = true;
         conflictCount++;
@@ -175,9 +182,24 @@ async function syncQuotes() {
   }
 }
 
+// ✅ Export quotes as a JSON file
+function exportToJsonFile() {
+  const dataStr = JSON.stringify(quotes, null, 2);
+  const blob = new Blob([dataStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const downloadLink = document.createElement("a");
+  downloadLink.href = url;
+  downloadLink.download = "quotes-export.json";
+  downloadLink.click();
+
+  URL.revokeObjectURL(url);
+}
+
 // Initial setup
 loadLocalQuotes();
 createAddQuoteForm();
+createExportButton();
 updateCategoryDropdown();
 showRandomQuote();
 syncQuotes(); // initial sync
