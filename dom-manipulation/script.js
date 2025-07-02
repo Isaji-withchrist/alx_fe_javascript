@@ -60,13 +60,29 @@ function createAddQuoteForm() {
   document.body.appendChild(formContainer);
 }
 
-// Create export button dynamically
+// Dynamically create Export button
 function createExportButton() {
   const exportBtn = document.createElement("button");
   exportBtn.textContent = "Export Quotes as JSON";
   exportBtn.style.marginTop = "15px";
   exportBtn.addEventListener("click", exportToJsonFile);
   document.body.appendChild(exportBtn);
+}
+
+// Dynamically create Import file input
+function createImportButton() {
+  const label = document.createElement("label");
+  label.textContent = "Import Quotes from JSON:";
+  label.style.display = "block";
+  label.style.marginTop = "20px";
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".json";
+  fileInput.addEventListener("change", importFromJsonFile);
+
+  label.appendChild(fileInput);
+  document.body.appendChild(label);
 }
 
 // Update category dropdown
@@ -115,7 +131,6 @@ async function addQuote() {
     return;
   }
 
-  // Add locally
   quotes.push(newQuote);
   saveLocalQuotes();
   updateCategoryDropdown();
@@ -141,7 +156,7 @@ async function addQuote() {
   }
 }
 
-// ✅ Sync function (contains 'syncQuotes')
+// ✅ Periodic syncing and conflict resolution
 async function syncQuotes() {
   try {
     const response = await fetch("https://jsonplaceholder.typicode.com/posts");
@@ -182,7 +197,7 @@ async function syncQuotes() {
   }
 }
 
-// ✅ Export quotes as a JSON file
+// ✅ Export quotes as JSON file
 function exportToJsonFile() {
   const dataStr = JSON.stringify(quotes, null, 2);
   const blob = new Blob([dataStr], { type: "application/json" });
@@ -196,10 +211,62 @@ function exportToJsonFile() {
   URL.revokeObjectURL(url);
 }
 
+// ✅ Import quotes from JSON file
+function importFromJsonFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    try {
+      const importedData = JSON.parse(e.target.result);
+
+      if (!Array.isArray(importedData)) {
+        alert("Invalid JSON format. Expected an array.");
+        return;
+      }
+
+      let addedCount = 0;
+
+      importedData.forEach(importedQuote => {
+        if (importedQuote.text && importedQuote.category) {
+          const exists = quotes.some(
+            q =>
+              q.text.trim().toLowerCase() === importedQuote.text.trim().toLowerCase() &&
+              q.category.trim().toLowerCase() === importedQuote.category.trim().toLowerCase()
+          );
+
+          if (!exists) {
+            quotes.push(importedQuote);
+            addedCount++;
+          }
+        }
+      });
+
+      if (addedCount > 0) {
+        saveLocalQuotes();
+        updateCategoryDropdown();
+        showRandomQuote();
+        notifyUser(`Imported ${addedCount} new quote(s) from file.`);
+      } else {
+        alert("No new quotes imported. All data already exists.");
+      }
+
+    } catch (error) {
+      alert("Error reading JSON file.");
+      console.error(error);
+    }
+  };
+
+  reader.readAsText(file);
+}
+
 // Initial setup
 loadLocalQuotes();
 createAddQuoteForm();
 createExportButton();
+createImportButton();
 updateCategoryDropdown();
 showRandomQuote();
 syncQuotes(); // initial sync
