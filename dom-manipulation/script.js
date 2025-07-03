@@ -86,7 +86,7 @@ function createImportButton() {
 }
 
 // Update category dropdown
-function updateCategoryDropdown() {
+function populateCategories() {
   const categories = ["all", ...new Set(quotes.map(q => q.category))];
   categoryFilter.innerHTML = "";
   categories.forEach(cat => {
