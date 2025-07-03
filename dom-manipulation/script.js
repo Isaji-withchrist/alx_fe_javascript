@@ -100,10 +100,7 @@ function populateCategories() {
 // Show a random quote
 function showRandomQuote() {
   const selectedCategory = categoryFilter.value;
-  const filtered = selectedCategory === "all"
-    ? quotes
-    : quotes.filter(q => q.category === selectedCategory);
-
+  const filtered = filterQuote(selectedCategory);
   if (!filtered.length) {
     quoteDisplay.textContent = "No quotes available.";
     return;
